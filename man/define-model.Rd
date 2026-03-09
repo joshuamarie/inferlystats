@@ -3,13 +3,6 @@
 \name{define_model.data.frame}
 \alias{define_model.data.frame}
 \alias{define_model.infer_model}
-\alias{rel}
-\alias{compare_by}
-\alias{cont_tab}
-\alias{prop_model}
-\alias{pairwise}
-\alias{selected_vars}
-\alias{one_sample}
 \alias{define-model}
 \alias{define_model}
 \title{Define a model for statistical inference}
@@ -17,20 +10,6 @@
 \method{define_model}{data.frame}(.x, to_analyze, ...)
 
 \method{define_model}{infer_model}(.x, data = NULL, ...)
-
-rel(x, resp, ...)
-
-compare_by(x, grp, ...)
-
-cont_tab(ind, dep, ...)
-
-prop_model(x, ...)
-
-pairwise(..., .dir = "leq")
-
-selected_vars(...)
-
-one_sample(var, ...)
 
 define_model(.x, ...)
 }
