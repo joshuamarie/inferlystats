@@ -4,9 +4,9 @@
 \name{inferlystat}
 \alias{inferlystat-package}
 \alias{inferlystat}
-\title{inferlystat: Composable and Tidy Grammar for Statistical Inference}
+\title{inferlystat: Higer Level Interface for Statistical Inference}
 \description{
-Provides a composable, pipe-based grammar for statistical inference in R. The package defines a unified domain-specific language for expressing statistical workflows, including data specification, estimands, hypotheses, test statistics, and evaluation, using tidyverse conventions. It supports classical, resampling-based, and Bayesian inference paradigms, and returns tidy outputs suitable for downstream analysis and reporting.
+This is a high-level package, attempting the re-imagination of "grammar of statistical inference" framework in a package, mixing with 'ggplot2' / 'tidyverse' paradigm.
 }
 \author{
 \strong{Maintainer}: Joshua Marie \email{joshua.marie.k@gmail.com}
