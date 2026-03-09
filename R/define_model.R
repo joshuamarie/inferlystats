@@ -48,7 +48,96 @@ define_model.infer_model = function(.x, data = NULL, ...) {
     out
 }
 
-#' @rdname define-model
+#' Model ID constructors for use inside `define_model()`
+#'
+#' These functions declare the structure of the analysis — which variables to
+#' use and how they relate to each other. They are always passed as the
+#' `to_analyze` argument to [define_model()], or called standalone for the
+#' global (no data frame) path.
+#'
+#' Each constructor produces an `infer_model` object carrying the variable
+#' declarations as unevaluated expressions. Variables are resolved lazily —
+#' either against a data frame inside [define_model()], or from the calling
+#' environment when no data frame is supplied.
+#'
+#' @param x <[`tidy-select`][dplyr::dplyr_tidy_select]> The grouping or
+#'   predictor variable. For `rel()`, this is the variable whose levels define
+#'   the groups being compared.
+#' @param resp <[`tidy-select`][dplyr::dplyr_tidy_select]> The response
+#'   variable. For `rel()`, this is the outcome being measured across groups.
+#' @param ind <[`tidy-select`][dplyr::dplyr_tidy_select]> The independent
+#'   (row) variable in the contingency table.
+#' @param dep <[`tidy-select`][dplyr::dplyr_tidy_select]> The dependent
+#'   (column) variable in the contingency table.
+#' @param x <[`tidy-select`][dplyr::dplyr_tidy_select]> The variable whose
+#'   proportion is being modeled. For the global path, a count of successes.
+#' @param size For `prop_model()` on the global path only: the total number
+#'   of trials.
+#' @param var <[`tidy-select`][dplyr::dplyr_tidy_select]> The single variable
+#'   to analyze.
+#' @param ... <[`tidy-select`][dplyr::dplyr_tidy_select]> For `pairwise()`
+#'   and `selected_vars()`: two or more variables to include.
+#' @param .dir Direction of pairing for `pairwise()`. One of `"leq"`
+#'   (default), `"lt"`, `"gt"`, `"geq"`, `"eq"`, `"neq"`, or `"all"`.
+#'
+#' @return An `infer_model` object of the corresponding subclass —
+#'   `rel`, `cont_tab`, `prop_model`, `pairwise`, `selected_vars`, or
+#'   `one_sample`.
+#'
+#' @section `rel()`:
+#' Declares a two-variable relationship between a grouping variable `x` and a
+#' response variable `resp`. Used for tests that compare a response across
+#' groups, such as and `COR_TEST()`.
+#'
+#' @section `cont_tab()`:
+#' Declares a contingency table from two categorical variables `ind` and
+#' `dep`. Used for tests of independence or association, such as
+#' [CHI2_TEST()].
+#'
+#' @section `prop_model()`:
+#' Declares a proportion model from a binary variable or raw success/trial
+#' counts. Used for `BINOM_TEST()` and `PROP_TEST()`.
+#'
+#' @section `pairwise()`:
+#' Declares all pairwise combinations of two or more variables. The direction
+#' of pairing is controlled by `.dir`. Used for pairwise [TTEST()] and similar
+#' tests.
+#'
+#' @section `selected_vars()`:
+#' Declares an arbitrary set of variables with no assumed structure. Used when
+#' the test itself determines how the variables are used.
+#'
+#' @section `one_sample()`:
+#' Declares a single variable for one-sample inference — testing or estimating
+#' a population parameter from a single group.
+#'
+#' @seealso [define_model()], [run_test()], [prepare_test()]
+#'
+#' @examples
+#' # rel() — grouping variable x response
+#' sleep |> define_model(rel(group, extra))
+#' define_model(rel(sleep$group, sleep$extra))
+#'
+#' # cont_tab() — contingency table
+#' mtcars |> define_model(cont_tab(vs, am))
+#'
+#' # prop_model() — proportion from data or counts
+#' mtcars |> define_model(prop_model(vs))
+#' define_model(prop_model(x = 10, size = 19))
+#'
+#' # pairwise() — all pairwise combinations
+#' sleep |> define_model(pairwise(extra, group))
+#'
+#' # selected_vars() — arbitrary variable set
+#' mtcars |> define_model(selected_vars(mpg, wt, hp))
+#'
+#' # one_sample() — single variable
+#' sleep |> define_model(one_sample(extra))
+#'
+#' @name model-id
+NULL
+
+#' @rdname model-id
 #' @export
 rel = function(x, resp, ...) {
     xs = rlang::enquo(x)
@@ -62,7 +151,7 @@ rel = function(x, resp, ...) {
     out
 }
 
-#' @rdname define-model
+#' @rdname model-id
 #' @export
 compare_by = function(x, grp, ...) {
     xs = rlang::enquo(x)
@@ -76,7 +165,7 @@ compare_by = function(x, grp, ...) {
     out
 }
 
-#' @rdname define-model
+#' @rdname model-id
 #' @export
 cont_tab = function(ind, dep, ...) {
     inds = rlang::enquo(ind)
@@ -91,7 +180,7 @@ cont_tab = function(ind, dep, ...) {
     out
 }
 
-#' @rdname define-model
+#' @rdname model-id
 #' @export
 prop_model = function(x, ...) {
     xs = rlang::enquo(x)
@@ -105,7 +194,7 @@ prop_model = function(x, ...) {
     out
 }
 
-#' @rdname define-model
+#' @rdname model-id
 #' @export
 pairwise = function(..., .dir = "leq") {
     dots = rlang::enquos(...)
@@ -120,7 +209,7 @@ pairwise = function(..., .dir = "leq") {
     out
 }
 
-#' @rdname define-model
+#' @rdname model-id
 #' @export
 selected_vars = function(...) {
     dots = rlang::enquos(...)
@@ -134,7 +223,7 @@ selected_vars = function(...) {
     out
 }
 
-#' @rdname define-model
+#' @rdname model-id
 #' @export
 one_sample = function(var, ...) {
     vs = rlang::enquo(var)
@@ -148,6 +237,7 @@ one_sample = function(var, ...) {
     out
 }
 
+#' @keywords internal
 #' @export
 model_id = function(clss, arg_list, data = NULL, formula = NULL) {
     out = list(
@@ -157,313 +247,4 @@ model_id = function(clss, arg_list, data = NULL, formula = NULL) {
     )
     class(out) = write_class(clss)
     out
-}
-
-#' Extract the model_id from a pipeline object
-#'
-#' @param .x A `model_to_analyze` or `test_lazy` object.
-#' @export
-get_model_id = function(.x) {
-    .x$model_id
-}
-
-#' Validates and extracts data for a given model_id against a data frame.
-#' Returns a list with:
-#'   -  $data — subsetted data frame containing only the relevant columns
-#'   -  $vars — named character vector of resolved column names
-#'
-#' Errors immediately if any referenced column is missing.
-#' @keywords internal
-#' @noRd
-process_model_id = function(model_id, data) {
-    # ---- Process current model ----
-    UseMethod("process_model_id")
-}
-
-process_model_id.formula = function(model_id, data) {
-    # ---- Formula ----
-    list(
-        data = data,
-        vars = NULL,
-        formula = model_id
-    )
-}
-
-process_model_id.rel = function(model_id, data) {
-    # ---- "Relation" ----
-    x_names = names(tidyselect::eval_select(model_id$args$x, data))
-    resp_names = names(tidyselect::eval_select(model_id$args$resp, data))
-
-    all_names = c(x_names, resp_names)
-    .check_cols(data, all_names)
-
-    list(
-        data = data[, all_names, drop = FALSE],
-        vars = list(x = x_names, resp = resp_names)
-    )
-}
-
-process_model_id.compare_by = function(model_id, data) {
-    # ---- "Comparison" ----
-    x_names = names(tidyselect::eval_select(model_id$args$x, data))
-    grp_names = names(tidyselect::eval_select(model_id$args$grp, data))
-
-    all_names = c(x_names, grp_names)
-    .check_cols(data, all_names)
-
-    list(
-        data = data[, all_names, drop = FALSE],
-        vars = list(x = x_names, grp = grp_names)
-    )
-}
-
-process_model_id.cont_tab = function(model_id, data) {
-    # ---- Cont. Table ----
-    ind_name = rlang::as_name(model_id$args$ind)
-    dep_name = rlang::as_name(model_id$args$dep)
-
-    .check_cols(data, c(ind_name, dep_name))
-
-    list(
-        data = data[, c(ind_name, dep_name), drop = FALSE],
-        mat = table(
-            data[[ind_name]],
-            data[[dep_name]],
-            dnn = c(ind_name, dep_name)
-        ),
-        vars = c(ind = ind_name, dep = dep_name)
-    )
-}
-
-process_model_id.prop_model = function(model_id, data) {
-    # ---- Prop. Model ----
-    var_name = rlang::as_name(model_id$args$x)
-
-    .check_cols(data, var_name)
-
-    list(
-        data = data[, var_name, drop = FALSE],
-        vars = c(x = var_name)
-    )
-}
-
-process_model_id.pairwise = function(model_id, data) {
-    # ---- Pairwise ----
-    sel = tidyselect::eval_select(model_id$args$dots, data)
-    var_names = names(sel)
-    .dir = model_id$.dir
-
-    pairs = all_pairs(var_names, direction = .dir)
-
-    list(
-        data = vctrs::vec_slice(data, seq_len(nrow(data)))[var_names],
-        vars = var_names,
-        .dir = .dir,
-        pairs = pairs
-    )
-}
-
-process_model_id.selected_vars = function(model_id, data) {
-    # ---- Independent Vars ----
-    sel = tidyselect::eval_select(model_id$args$dots, data)
-    var_names = names(sel)
-
-    list(
-        data = data[, var_names, drop = FALSE],
-        vars = var_names
-    )
-}
-
-process_model_id.one_sample = function(model_id, data) {
-    # ---- Only 1 Var ----
-    var_name = rlang::as_name(model_id$args$var)
-
-    .check_cols(data, var_name)
-
-    list(
-        data = data[, var_name, drop = FALSE],
-        vars = c(var = var_name)
-    )
-}
-
-process_model_id.infer_model = function(model_id, data) {
-    cli::cli_abort(c(
-        "No {.fn process_model_id} method for model type {.cls {class(model_id)[[1]]}}.",
-        "i" = "This model type is not yet supported in {.fn define_model}."
-    ))
-}
-
-#' Processing model in the current environment
-#'
-#' When the variables of the model "to be analyzed" is not supplied with
-#' data, it will look up at the current environment
-#'
-#' @keywords internal
-#' @noRd
-process_model_id_global = function(model_id) {
-    # ---- Process model globally ----
-    UseMethod("process_model_id_global")
-}
-
-process_model_id_global.rel = function(model_id) {
-    # ---- "Relation" ----
-    x = rlang::eval_tidy(model_id$args$x)
-    resp = rlang::eval_tidy(model_id$args$resp)
-
-    data = data.frame(x = x, resp = resp)
-    names(data) = c(
-        rlang::as_label(model_id$args$x),
-        rlang::as_label(model_id$args$resp)
-    )
-
-    list(
-        data = data,
-        vars = list(x = names(data)[[1]], resp = names(data)[[2]])
-    )
-}
-
-process_model_id_global.formula = function(model_id) {
-    # ---- Formula ----
-    data = environment(model_id)
-
-    list(
-        data = data,
-        vars = NULL,
-        formula = model_id
-    )
-}
-
-process_model_id_global.cont_tab = function(model_id) {
-    # ---- Cont. Table ----
-    ind = rlang::eval_tidy(model_id$args$ind)
-    dep = rlang::eval_tidy(model_id$args$dep)
-
-    ind_label = rlang::as_label(model_id$args$ind)
-    dep_label = rlang::as_label(model_id$args$dep)
-
-    data = data.frame(ind, dep)
-    names(data) = c(ind_label, dep_label)
-
-    list(
-        data = data,
-        mat = table(ind, dep, dnn = c(ind_label, dep_label)),
-        vars = c(x = names(data)[[1]], resp = names(data)[[2]])
-    )
-}
-
-process_model_id_global.infer_model = function(model_id) {
-    cli::cli_abort(c(
-        "No {.fn process_model_id_global} method for model type {.cls {class(model_id)[[1]]}}.",
-        "i" = "This model type is not yet supported without a data frame."
-    ))
-}
-
-.check_cols = function(data, cols) {
-    missing = cols[!cols %in% names(data)]
-    if (length(missing) > 0L) {
-        cli::cli_abort(c(
-            "Column{?s} not found in data: {.val {missing}}.",
-            "i" = "Available columns: {.val {names(data)}}"
-        ))
-    }
-    invisible(NULL)
-}
-
-#' @keywords internal
-#' @export
-print.model_to_analyze = function(x, ...) {
-    model_id  = x$model_id
-    processed = x$processed
-    model_cls = class(model_id)[[1]]
-
-    cli::cli_text(cli::style_bold("Model to Analyze"))
-    cli::cat_line(cli::rule(line = "-"))
-
-    cli::cli_text("{.field Type}  : {.cls {model_cls}}")
-
-    switch(
-        model_cls,
-        rel = {
-            cli::cli_text("{.field x}     : {.val {processed$vars$x}}")
-            cli::cli_text("{.field resp}  : {.val {processed$vars$resp}}")
-        },
-        cont_tab = {
-            cli::cli_text("{.field ind}   : {.val {processed$vars[['ind']]}}")
-            cli::cli_text("{.field dep}   : {.val {processed$vars[['dep']]}}")
-        },
-        prop_model = {
-            cli::cli_text("{.field x}     : {.val {processed$vars[['x']]}}")
-        },
-        pairwise = {
-            cli::cli_text("{.field vars}  : {.val {processed$vars}}")
-            cli::cli_text("{.field pairs} : {length(processed$pairs)} pair{?s}")
-        },
-        selected_vars = {
-            cli::cli_text("{.field vars}  : {.val {processed$vars}}")
-        },
-        one_sample = {
-            cli::cli_text("{.field var}   : {.val {processed$vars[['var']]}}")
-        },
-        formula = {
-            cli::cli_text("{.field formula}: {.code {deparse(processed$formula)}}")
-        },
-        {
-            nms = setdiff(names(processed), "data")
-            for (nm in nms)
-                cli::cli_text("{.field {nm}} : {.val {processed[[nm]]}}")
-        }
-    )
-
-    if (!is.null(processed$data)) {
-        dims = dim(processed$data)
-        if (!is.null(dims))
-            cli::cli_text("{.field data}  : {dims[[1]]} row{?s} x {dims[[2]]} col{?s}")
-    }
-
-    invisible(x)
-}
-
-#' @keywords internal
-#' @export
-print.infer_model = function(x, ...) {
-    model_cls = class(x)[[1]]
-
-    cli::cli_text(cli::style_bold("Model ID"))
-    cli::cat_line(cli::rule(line = "-"))
-    cli::cli_text("{.field Type} : {.cls {model_cls}}")
-
-    switch(
-        model_cls,
-        rel = {
-            cli::cli_text("{.field x}      : {.code {rlang::as_label(x$args$x)}}")
-            cli::cli_text("{.field resp}   : {.code {rlang::as_label(x$args$resp)}}")
-        },
-        cont_tab = {
-            cli::cli_text("{.field ind}    : {.code {rlang::as_label(x$args$ind)}}")
-            cli::cli_text("{.field dep}    : {.code {rlang::as_label(x$args$dep)}}")
-        },
-        prop_model = {
-            cli::cli_text("{.field x}      : {.code {rlang::as_label(x$args$x)}}")
-        },
-        pairwise = {
-            vars = vapply(rlang::call_args(x$args$dots), rlang::as_label, character(1))
-            cli::cli_text("{.field vars}   : {.code {vars}}")
-            cli::cli_text("{.field dir}    : {.val {x$.dir}}")
-        },
-        selected_vars = {
-            vars = vapply(rlang::call_args(x$args$dots), rlang::as_label, character(1))
-            cli::cli_text("{.field vars}   : {.code {vars}}")
-        },
-        one_sample = {
-            cli::cli_text("{.field var}    : {.code {rlang::as_label(x$args$var)}}")
-        },
-        {
-            # fallback for user-defined model types
-            nms = setdiff(names(x$args), "dots")
-            for (nm in nms)
-                cli::cli_text("{.field {nm}} : {.code {rlang::as_label(x$args[[nm]])}}")
-        }
-    )
-
-    invisible(x)
 }
